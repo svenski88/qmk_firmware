@@ -37,7 +37,7 @@
 
 #define ISSI_ADDR_DEFAULT 0x50
 
-#define BACKLIGHT_EFFECT_MAX 3
+#define BACKLIGHT_EFFECT_MAX 5
 
 #ifndef MONO_BACKLIGHT_COLOR_1
 #define MONO_BACKLIGHT_COLOR_1 { .h = 0, .s = 255 }
@@ -57,6 +57,10 @@ uint8_t g_indicator_state = 0;
 
 // Global tick at 20 Hz
 uint32_t g_tick = 0;
+
+// Svenge global int
+uint8_t sv_led = 0;
+uint8_t sv_speed = 0;
 
 // Ticks since any key was last hit.
 uint32_t g_any_key_hit = 0;
@@ -138,6 +142,71 @@ void backlight_effect_all_on(void)
 	IS31FL3736_mono_set_brightness_all( g_config.brightness );
 }
 
+// SVENGE'S CUSTOM LED AFFECTS
+void backlight_effect_indexer(bool initialize)
+{
+    // Initialize all off and make sure speed var is reset
+    if ( initialize )
+    {
+        IS31FL3736_mono_set_brightness_all( 0 & 0xFF );
+        sv_speed = 0;
+        sv_led = 0;
+    }
+	
+    // Proc action based on global speed variable
+    if ( sv_speed >= (3 - g_config.effect_speed) )
+    {
+        IS31FL3736_mono_set_brightness( sv_led, 0 & 0xFF );
+
+        if ( sv_led < 95 )
+        {
+            sv_led++;
+        }
+        else
+        {
+            sv_led = 0;
+        }
+        
+        IS31FL3736_mono_set_brightness( sv_led, g_config.brightness );
+
+        sv_speed = 0;
+    }
+    else
+    {
+        sv_speed++;
+    }
+}
+void backlight_effect_mods(bool initialize)
+{
+    // Initialize all off
+    if ( initialize )
+    {
+        IS31FL3736_mono_set_brightness_all( 0 & 0xFF );
+    }
+    for ( int i=0; i<10; i++ )
+    {
+        IS31FL3736_mono_set_brightness( i, g_config.brightness );
+    }
+    IS31FL3736_mono_set_brightness( 16, g_config.brightness );
+    IS31FL3736_mono_set_brightness( 24, g_config.brightness );
+    IS31FL3736_mono_set_brightness( 32, g_config.brightness );
+    for ( int i=40; i<56; i++ )
+    {
+        IS31FL3736_mono_set_brightness( i, g_config.brightness );
+    }
+    IS31FL3736_mono_set_brightness( 61, g_config.brightness );
+    IS31FL3736_mono_set_brightness( 62, g_config.brightness );
+    IS31FL3736_mono_set_brightness( 69, g_config.brightness );
+    IS31FL3736_mono_set_brightness( 70, g_config.brightness );
+    IS31FL3736_mono_set_brightness( 76, g_config.brightness );
+    IS31FL3736_mono_set_brightness( 78, g_config.brightness );
+    for ( int i=84; i<96; i++ )
+    {
+        IS31FL3736_mono_set_brightness( i, g_config.brightness );
+    }
+}
+
+
 void backlight_effect_raindrops(bool initialize)
 {
     // Change one LED every tick
@@ -213,10 +282,16 @@ ISR(TIMER3_COMPA_vect)
             backlight_effect_all_off();
             break;
         case 1:
-            backlight_effect_all_on();;
+            backlight_effect_all_on();
             break;
         case 2:
             backlight_effect_raindrops(initialize);
+            break;
+        case 3:
+            backlight_effect_indexer(initialize);
+            break;
+        case 4:
+            backlight_effect_mods(initialize);
             break;
         default:
             backlight_effect_all_off();
