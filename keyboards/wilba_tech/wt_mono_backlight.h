@@ -29,6 +29,12 @@ typedef struct PACKED
 
 typedef struct
 {
+	HS color;
+	uint8_t index;
+} backlight_config_indicator;
+
+typedef struct
+{
 	bool disable_when_usb_suspended:1;  // |
     bool __pad1:1;                      // |
     bool __pad2:1;                      // |
@@ -42,6 +48,10 @@ typedef struct
     uint8_t effect;                     // 1 byte
     uint8_t effect_speed;               // 1 byte
     HS color_1;                         // 2 bytes (Indicator Color for Xeno)
+    backlight_config_indicator caps_lock_indicator;	// 3 bytes
+	backlight_config_indicator layer_1_indicator;	// 3 bytes
+	backlight_config_indicator layer_2_indicator;	// 3 bytes
+	backlight_config_indicator layer_3_indicator;	// 3 bytes
 } backlight_config;                     // = 7 bytes
 
 void backlight_config_load(void);
