@@ -40,16 +40,7 @@
 
 #define BACKLIGHT_EFFECT_MAX 10
 
-#ifndef MONO_BACKLIGHT_COLOR_1
-#define MONO_BACKLIGHT_COLOR_1 { .h = 0, .s = 255 }
-#endif
-
-//SVENGE MODS
-#if defined(MONO_BACKLIGHT_WT75_C)
 #define BACKLIGHT_LED_COUNT 96
-#endif
-//END SVENGE MODS
-
 
 backlight_config g_config = {
     .disable_when_usb_suspended = MONO_BACKLIGHT_DISABLE_WHEN_USB_SUSPENDED,
@@ -57,12 +48,19 @@ backlight_config g_config = {
     .brightness = MONO_BACKLIGHT_BRIGHTNESS,
     .effect = MONO_BACKLIGHT_EFFECT,
     .effect_speed = MONO_BACKLIGHT_EFFECT_SPEED,
-    .color_1 = MONO_BACKLIGHT_COLOR_1,
-    .caps_lock_indicator = RGB_BACKLIGHT_CAPS_LOCK_INDICATOR,
-    .layer_1_indicator = RGB_BACKLIGHT_LAYER_1_INDICATOR,
-    .layer_2_indicator = RGB_BACKLIGHT_LAYER_2_INDICATOR,
-    .layer_3_indicator = RGB_BACKLIGHT_LAYER_3_INDICATOR
 };
+
+//    .caps_lock_indicator = BACKLIGHT_CAPS_LOCK_INDICATOR,
+//    .layer_1_indicator = BACKLIGHT_LAYER_1_INDICATOR,
+//    .layer_2_indicator = BACKLIGHT_LAYER_2_INDICATOR,
+//    .layer_3_indicator = BACKLIGHT_LAYER_3_INDICATOR
+uint8_t caps_lock_indicator = BACKLIGHT_CAPS_LOCK_INDICATOR;
+uint8_t layer_1_indicator = BACKLIGHT_LAYER_1_INDICATOR;
+uint8_t layer_2_indicator = BACKLIGHT_LAYER_2_INDICATOR;
+uint8_t layer_3_indicator = BACKLIGHT_LAYER_3_INDICATOR;
+uint8_t alt_indicator = BACKLIGHT_ALT_INDICATOR;
+uint8_t ctrl_indicator = BACKLIGHT_CTRL_INDICATOR;
+
 
 bool g_suspend_state = false;
 uint8_t g_indicator_state = 0;
@@ -304,6 +302,7 @@ void backlight_effect_keyfade(void)
         IS31FL3736_mono_set_brightness( i, g_config.brightness - (offset & 0xFF) );
     }
 }
+
 void backlight_effect_indexer(bool initialize)
 {
     //THIS EFFECT WAS ONLY USED FOR TESTING ADDRESS LOCATIONS
@@ -338,8 +337,6 @@ void backlight_effect_indexer(bool initialize)
         sv_speed++;
     }
 }
-
-
 
 void backlight_effect_mods(bool initialize)
 {
@@ -566,9 +563,26 @@ void backlight_effect_indicators_set_colors( uint8_t index, uint8_t ind_brite )
     {
         IS31FL3736_mono_set_brightness( index, ind_brite );
 
-        // If the spacebar LED is the indicator,
-        // do the same for the other spacebars
+        // Multi-key indicators bonus logic
         if ( index == 3 ) 
+        {
+            IS31FL3736_mono_set_brightness( index+1, ind_brite );
+            IS31FL3736_mono_set_brightness( index+2, ind_brite );
+            IS31FL3736_mono_set_brightness( index+3, ind_brite );
+        }
+        if ( index == 41 )
+        {
+            IS31FL3736_mono_set_brightness( index+1, ind_brite );
+            IS31FL3736_mono_set_brightness( index+2, ind_brite );
+            IS31FL3736_mono_set_brightness( index+3, ind_brite );
+        }
+        if ( index == 45 )
+        {
+            IS31FL3736_mono_set_brightness( index+1, ind_brite );
+            IS31FL3736_mono_set_brightness( index+2, ind_brite );
+            IS31FL3736_mono_set_brightness( index+3, ind_brite );
+        }
+        if ( index == 49 )
         {
             IS31FL3736_mono_set_brightness( index+1, ind_brite );
             IS31FL3736_mono_set_brightness( index+2, ind_brite );
@@ -584,31 +598,41 @@ void backlight_effect_indicators(void)
 {
     static bool lshift = false;
     static bool rshift = false;
+    static bool lctrl = false;
+    static bool rctrl = false;
+    static bool lalt = false;
+    static bool ralt = false;
+
 
     lshift = keyboard_report->mods & MOD_BIT(KC_LSFT);
     rshift = keyboard_report->mods & MOD_BIT(KC_RSFT);
+    lctrl = keyboard_report->mods & MOD_BIT(KC_LCTL);
+    rctrl = keyboard_report->mods & MOD_BIT(KC_RCTL);
+    lalt = keyboard_report->mods & MOD_BIT(KC_LALT);
+    ralt = keyboard_report->mods & MOD_BIT(KC_RALT);
 
-    if ( g_config.caps_lock_indicator.index != 255 &&
+
+    if ( caps_lock_indicator != 255 &&
             ( g_indicator_state & (1<<USB_LED_CAPS_LOCK) ) )
     {
         if ( !(lshift || rshift) )
         {
-            backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 255 );
+            backlight_effect_indicators_set_colors( caps_lock_indicator, 255 );
         }
         else
         {
-            backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 0 );
+            backlight_effect_indicators_set_colors( caps_lock_indicator, 0 );
         }
     }
     else
     {
-        if ( !(lshift || rshift) )
+        if ( (lshift || rshift) && caps_lock_indicator != 255 )
         {
-            backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 0 );
+            backlight_effect_indicators_set_colors( caps_lock_indicator, 255 );
         }
         else
         {
-            backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 255 );
+            backlight_effect_indicators_set_colors( caps_lock_indicator, 0 );
         }
     }
     // This if/else if structure allows higher layers to
@@ -623,24 +647,33 @@ void backlight_effect_indicators(void)
     // but still allow end users to do whatever they want.
     if ( IS_LAYER_ON(3) )
     {
-        if ( g_config.layer_3_indicator.index != 255 )
+        if ( layer_3_indicator != 255 )
         {
-            backlight_effect_indicators_set_colors( g_config.layer_3_indicator.index, 255 );
+            backlight_effect_indicators_set_colors( layer_3_indicator, 255 );
         }
     }
     else if ( IS_LAYER_ON(2) )
     {
-        if ( g_config.layer_2_indicator.index != 255 )
+        if ( layer_2_indicator != 255 )
         {
-            backlight_effect_indicators_set_colors( g_config.layer_2_indicator.index, 255 );
+            backlight_effect_indicators_set_colors( layer_2_indicator, 255 );
         }
     }
     else if ( IS_LAYER_ON(1) )
     {
-        if ( g_config.layer_1_indicator.index != 255 )
+        if ( layer_1_indicator != 255 )
         {
-            backlight_effect_indicators_set_colors( g_config.layer_1_indicator.index, 255 );
+            backlight_effect_indicators_set_colors( layer_1_indicator, 255 );
         }
+    }
+
+    if ( (lctrl || rctrl) && ctrl_indicator != 255 )
+    {
+        backlight_effect_indicators_set_colors( ctrl_indicator, 255 );
+    }
+    if ( (lalt || ralt) && alt_indicator != 255 )
+    {
+        backlight_effect_indicators_set_colors( alt_indicator, 255 );
     }
 }
 
@@ -727,18 +760,6 @@ ISR(TIMER3_COMPA_vect)
     }
 }
 
-// Some helpers for setting/getting HSV
-void _set_color( HS *color, uint8_t *data )
-{
-    color->h = data[0];
-    color->s = data[1];
-}
-
-void _get_color( HS *color, uint8_t *data )
-{
-    data[0] = color->h;
-    data[1] = color->s;
-}
 
 void backlight_config_set_value( uint8_t *data )
 {
@@ -770,11 +791,6 @@ void backlight_config_set_value( uint8_t *data )
         case id_effect_speed:
         {
             g_config.effect_speed = *value_data;
-            break;
-        }
-        case id_color_1:
-        {
-            _set_color( &(g_config.color_1), value_data );
             break;
         }
     }
@@ -814,11 +830,6 @@ void backlight_config_get_value( uint8_t *data )
         case id_effect_speed:
         {
             *value_data = g_config.effect_speed;
-            break;
-        }
-        case id_color_1:
-        {
-            _get_color( &(g_config.color_1), value_data );
             break;
         }
     }
