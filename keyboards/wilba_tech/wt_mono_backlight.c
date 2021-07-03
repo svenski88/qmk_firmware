@@ -136,10 +136,10 @@ const Point g_map_led_to_point_polar[BACKLIGHT_LED_COUNT] PROGMEM = {
     {195,46}, {204,68}, {213,100}, {219,134}, {225,171}, {230,226}, {235,255}, {255,255}, 
     //64
     {216,34}, {232,71}, {239,109}, {243,145}, {245,184}, {247,233}, {249,255}, {255,255}, 
-    //72
-    {37,44}, {24,82}, {18,117}, {172,38}, {14,156}, {255,255}, {8,255}, {255,255}, 
-    //80
-    {58,52}, {50,75}, {42,109}, {165,50}, {35,145}, {255,255}, {255,255}, {255,255}, 
+    //72 -- 75 is bad
+    {37,44}, {24,82}, {18,117}, {14,156}, {14,156}, {255,255}, {8,255}, {255,255}, 
+    //80 -- 83 is misbehaving
+    {58,52}, {50,75}, {42,109}, {35,145}, {35,145}, {255,255}, {255,255}, {255,255}, 
     //88
     {49,123}, {42,174}, {38,230}, {35,255}, {26,255}, {32,255}, {255,255}, {255,255}
 };
@@ -201,10 +201,6 @@ void map_led_to_row_column( uint8_t led, uint8_t *row, uint8_t *column )
     }
 }
 //END SVENGE MODS
-
-
-
-
 
 
 void backlight_init_drivers(void)
@@ -296,8 +292,21 @@ void backlight_effect_all_on(void)
 }
 
 // SVENGE'S CUSTOM LED AFFECTS
+void backlight_effect_keyfade(void)
+{
+    for ( int i=0; i<BACKLIGHT_LED_COUNT; i++ )
+    {
+        uint16_t offset = (g_key_hit[i] * (3 + g_config.effect_speed*5));
+        if (offset > g_config.brightness)
+        {
+            offset = g_config.brightness;
+        }
+        IS31FL3736_mono_set_brightness( i, g_config.brightness - (offset & 0xFF) );
+    }
+}
 void backlight_effect_indexer(bool initialize)
 {
+    //THIS EFFECT WAS ONLY USED FOR TESTING ADDRESS LOCATIONS
     // Initialize all off and make sure speed var is reset
     IS31FL3736_mono_set_brightness_all( 0 & 0xFF );
     if ( initialize )
@@ -329,6 +338,9 @@ void backlight_effect_indexer(bool initialize)
         sv_speed++;
     }
 }
+
+
+
 void backlight_effect_mods(bool initialize)
 {
     // Initialize all off
@@ -405,7 +417,7 @@ void backlight_effect_crossplash(void)
         for ( uint8_t i=0; i<MATRIX_COLS; i++ )
         {
             map_row_column_to_led(j,i,&led);
-            offset = (g_key_hit[led] * (6 + g_config.effect_speed*4));
+            offset = (g_key_hit[led] * (6 + g_config.effect_speed*5));
             if (offset > g_config.brightness)
             {
                 offset = g_config.brightness;
@@ -429,45 +441,26 @@ void backlight_effect_crossplash(void)
     }
 }
 
-
-void backlight_effect_raindrops(bool initialize)
-{
-    // Change one LED every tick
-    uint8_t led_to_change = ( g_tick & 0x000 ) == 0 ? rand() % 96 : 255;
-
-    for ( int i=0; i<96; i++ )
-    {
-        // If initialize, all get set to random brightness
-        // If not, all but one will stay the same as before.
-        if ( initialize || i == led_to_change )
-        {
-            IS31FL3736_mono_set_brightness(i, rand() & 0xFF );
-        }
-    }
-}
-
 void backlight_effect_cycle_all(void)
 {
 	uint8_t offset = ( g_tick << g_config.effect_speed ) & 0xFF;
-
-	backlight_set_brightness_all( offset );
+    offset = offset*2 < 255 ? offset*2 : 510 - offset*2;
+    offset = offset <= g_config.brightness ? offset : g_config.brightness;
+    backlight_set_brightness_all( offset );
 }
 
-// here starts the fancy ones imported from RGB
 void backlight_effect_cycle_left_right(void)
 {
     //point.x scales from 0 to 224
     //uint32_t g_tick max int value is 0xFFFFFFFF
-    //uint8_t offset = ( g_tick << g_config.effect_speed ) & 0xFF;
-    
     Point point;
     uint8_t brt;
     uint8_t offset = ( g_tick << g_config.effect_speed ) & 0xFF;
     uint8_t offset2 = 30;
     
-    
     for ( int i=0; i<BACKLIGHT_LED_COUNT; i++ )
     {
+        brt = 0;
         map_led_to_point( i, &point );
         if ( (point.x >= (offset - offset2)) && (point.x <= (offset + offset2)))
         {
@@ -475,36 +468,94 @@ void backlight_effect_cycle_left_right(void)
             {
                 brt = g_config.brightness - abs(point.x - offset) * (255 / offset2);
             }
-            else
+        }
+        if ( (offset > 255 - offset2) && (point.x <= (offset + offset2 - 255)) )
+        {
+            //offset = offset - 255;
+            if ( g_config.brightness > abs(point.x - (offset - 255)) * (255 / offset2)  )
             {
-                brt = 0;
+                brt = g_config.brightness - abs(point.x - (offset - 255)) * (255 / offset2);
             }
         }
-        else 
+        if ( (offset < offset2) && (point.x >= (offset - offset2 + 255)) )
         {
-            brt = 0;
+            //offset = offset + 255;
+            if ( g_config.brightness > abs(point.x - (offset + 255)) * (255 / offset2)  )
+            {
+                brt = g_config.brightness - abs(point.x - (offset + 255)) * (255 / offset2);
+            }
         }
         IS31FL3736_mono_set_brightness( i, brt );
     }
 }
 
-
-void backlight_effect_keyfade(void)
+void backlight_effect_cycle_radial(void)
 {
+    //point.x scales from 0 to 224
+    //uint32_t g_tick max int value is 0xFFFFFFFF
+    Point point;
+    uint8_t brt;
+    uint8_t offset = ( g_tick << g_config.effect_speed ) & 0xFF;
+    uint8_t offset2 = 30;
+    
     for ( int i=0; i<BACKLIGHT_LED_COUNT; i++ )
     {
-        uint16_t offset = (g_key_hit[i] * (1 + g_config.effect_speed));
-        if (offset > g_config.brightness)
+        brt = 0;
+        map_led_to_point_polar( i, &point );
+        if ( (point.x >= (offset - offset2)) && (point.x <= (offset + offset2)))
         {
-            offset = g_config.brightness;
+            if ( g_config.brightness > abs(point.x - offset) * (255 / offset2)  )
+            {
+                brt = g_config.brightness - abs(point.x - offset) * (255 / offset2);
+            }
         }
-        IS31FL3736_mono_set_brightness( i, g_config.brightness - (offset & 0xFF) );
+        if ( (offset > 255 - offset2) && (point.x <= (offset + offset2 - 255)) )
+        {
+            //offset = offset - 255;
+            if ( g_config.brightness > abs(point.x - (offset - 255)) * (255 / offset2)  )
+            {
+                brt = g_config.brightness - abs(point.x - (offset - 255)) * (255 / offset2);
+            }
+        }
+        if ( (offset < offset2) && (point.x >= (offset - offset2 + 255)) )
+        {
+            //offset = offset + 255;
+            if ( g_config.brightness > abs(point.x - (offset + 255)) * (255 / offset2)  )
+            {
+                brt = g_config.brightness - abs(point.x - (offset + 255)) * (255 / offset2);
+            }
+        }
+        IS31FL3736_mono_set_brightness( i, brt );
     }
 }
 
+void backlight_effect_raindrops(bool initialize)
+{
+    // Initialize all off and make sure speed var is reset
+    if ( initialize )
+    {
+        sv_speed = 0;
+        sv_led = 0;
+    }
+    // Change one LED every tick
+    if ( sv_speed >= (4 - g_config.effect_speed) )
+    {
+        for ( uint8_t i=0; i<18; i++ )
+        {
+            sv_led = rand() % 96;
+            g_key_hit[sv_led] = 0;
+        }
+        sv_speed = 0;
+    }
+    else
+    {
+        sv_speed++;
+    }
+    backlight_effect_keyfade();
+}
 
 
-
+//INDICATOR helper function
 void backlight_effect_indicators_set_colors( uint8_t index, uint8_t ind_brite )
 {
     if ( index == 254 )
@@ -531,14 +582,34 @@ void backlight_effect_indicators_set_colors( uint8_t index, uint8_t ind_brite )
 // colors already set
 void backlight_effect_indicators(void)
 {
-if ( g_config.caps_lock_indicator.index != 255 &&
+    static bool lshift = false;
+    static bool rshift = false;
+
+    lshift = keyboard_report->mods & MOD_BIT(KC_LSFT);
+    rshift = keyboard_report->mods & MOD_BIT(KC_RSFT);
+
+    if ( g_config.caps_lock_indicator.index != 255 &&
             ( g_indicator_state & (1<<USB_LED_CAPS_LOCK) ) )
     {
-        backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 255 );
+        if ( !(lshift || rshift) )
+        {
+            backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 255 );
+        }
+        else
+        {
+            backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 0 );
+        }
     }
     else
     {
-        backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 0 );
+        if ( !(lshift || rshift) )
+        {
+            backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 0 );
+        }
+        else
+        {
+            backlight_effect_indicators_set_colors( g_config.caps_lock_indicator.index, 255 );
+        }
     }
     // This if/else if structure allows higher layers to
     // override lower ones. If we set layer 3's indicator
@@ -622,16 +693,16 @@ ISR(TIMER3_COMPA_vect)
             backlight_effect_all_on();
             break;
         case 2:
-            backlight_effect_raindrops(initialize);
+            backlight_effect_cycle_all();
             break;
         case 3:
-            backlight_effect_indexer(initialize);
+            backlight_effect_cycle_radial();
             break;
         case 4:
-            backlight_effect_mods(initialize);
+            backlight_effect_cycle_left_right();
             break;
         case 5:
-            backlight_effect_cycle_all();
+            backlight_effect_keyfade();
             break;
         case 6:
             backlight_effect_rowsplash();
@@ -640,10 +711,10 @@ ISR(TIMER3_COMPA_vect)
             backlight_effect_crossplash();
             break;
         case 8:
-            backlight_effect_cycle_left_right();
+            backlight_effect_mods(initialize);
             break;
         case 9:
-            backlight_effect_keyfade();
+            backlight_effect_raindrops(initialize);
             break;
         default:
             backlight_effect_all_off();
