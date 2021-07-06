@@ -60,6 +60,8 @@ uint8_t layer_2_indicator = BACKLIGHT_LAYER_2_INDICATOR;
 uint8_t layer_3_indicator = BACKLIGHT_LAYER_3_INDICATOR;
 uint8_t alt_indicator = BACKLIGHT_ALT_INDICATOR;
 uint8_t ctrl_indicator = BACKLIGHT_CTRL_INDICATOR;
+uint8_t idle_indicator = BACKLIGHT_IDLE_INDICATOR;
+uint8_t act_indicator = BACKLIGHT_ACTIVITY_INDICATOR;
 
 
 bool g_suspend_state = false;
@@ -602,6 +604,8 @@ void backlight_effect_indicators(void)
     static bool rctrl = false;
     static bool lalt = false;
     static bool ralt = false;
+    //static bool activity = false;
+    //static bool idle = false;
 
 
     lshift = keyboard_report->mods & MOD_BIT(KC_LSFT);
@@ -610,6 +614,21 @@ void backlight_effect_indicators(void)
     rctrl = keyboard_report->mods & MOD_BIT(KC_RCTL);
     lalt = keyboard_report->mods & MOD_BIT(KC_LALT);
     ralt = keyboard_report->mods & MOD_BIT(KC_RALT);
+
+    if ( g_any_key_hit <= 2 )
+    {
+        //activity = true;
+        //idle = false;
+        backlight_effect_indicators_set_colors( act_indicator, 255 );
+    }
+    else if ( g_any_key_hit < 0x3E8 )
+    {
+        if ( g_any_key_hit % 40 > 18 )
+        {
+            backlight_effect_indicators_set_colors( act_indicator, 255 );
+        }
+    }
+    else { backlight_effect_indicators_set_colors( idle_indicator, 255 ); }
 
 
     if ( caps_lock_indicator != 255 &&
