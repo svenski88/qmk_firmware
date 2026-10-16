@@ -379,7 +379,7 @@ void backlight_effect_rowsplash(void)
         for ( uint8_t i=0; i<MATRIX_COLS; i++ )
         {
             map_row_column_to_led(j,i,&led);
-            offset = (g_key_hit[led] * (6 + g_config.effect_speed*4));
+            offset = (g_key_hit[led] * (18 + g_config.effect_speed*9));
             if (offset > g_config.brightness)
             {
                 offset = g_config.brightness;
@@ -416,7 +416,7 @@ void backlight_effect_crossplash(void)
         for ( uint8_t i=0; i<MATRIX_COLS; i++ )
         {
             map_row_column_to_led(j,i,&led);
-            offset = (g_key_hit[led] * (6 + g_config.effect_speed*5));
+            offset = (g_key_hit[led] * (18 + g_config.effect_speed*9));
             if (offset > g_config.brightness)
             {
                 offset = g_config.brightness;
