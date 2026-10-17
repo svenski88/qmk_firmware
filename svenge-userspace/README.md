@@ -26,15 +26,35 @@ optional WT75-C support from this firmware branch until that support is upstream
 
 ## Controls
 
-The original four-layer layout, navigation/media keys and Fn+R bootloader shortcut
-are retained. Added controls on the Fn layer:
+The saved `wilba_tech_wt75_c.layout.json` VIA export supplies all four default
+layers, including your navigation/media keys and Fn+R bootloader shortcut.
+Its legacy lighting names are translated to current LED Matrix keycodes:
 
 | Shortcut | Action |
 | --- | --- |
-| Fn+F1 | Lighting on/off |
-| Fn+F2 / Fn+F3 | Previous / next effect |
-| Fn+F4 / Fn+F5 | Brightness down / up |
-| Fn+F6 / Fn+F7 | Speed down / up |
+| Fn+[ / Fn+] | Previous / next effect |
+| Fn+B / Fn+G | Brightness down / up |
+| Fn+, / Fn+. | Speed down / up |
+
+The saved layout replaces the temporary Fn+F-key controls from the initial port.
+To change the compiled defaults after saving another VIA export:
+
+```sh
+python svenge-userspace/import_layout.py
+python svenge-userspace/import_layout.py --check
+```
+
+Then rebuild the firmware. `layout.inc` is generated from all 384 matrix entries.
+The importer verifies the board ID and dimensions and refuses to silently drop
+nonempty macros or encoder mappings. The original export is preserved unchanged.
+Legacy `RESET` becomes `QK_BOOT`; `EF_*`, `BR_*`, and `ES_*` become the matching
+`LM_*` effect, brightness and speed controls.
+
+VIA stores a separate copy of the keymap in EEPROM. Flashing alone can retain
+that stored map instead of these new defaults. Initialize EEPROM deliberately
+to load the new defaults, after saving any current VIA changes. The original
+export still contains old lighting keycode names; use the compiled defaults for
+the migrated lighting controls rather than importing that export unchanged.
 
 Solid is the initial mode. The next eight modes are the migrated breathing,
 radial wave, horizontal wave, key fade, row splash, cross splash, modifier-only,
