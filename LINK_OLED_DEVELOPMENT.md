@@ -48,10 +48,17 @@ all six layers, including its SpaceFN layer-tap keys.
 
 Right encoder push [9,5] is reserved for Dashboard → Matrix rain → Off on both
 screens. Dashboard enters rain at 60 seconds idle and wakes on activity; manual
-rain stays selected and manual Off stays off until the next mode press. Held keys
+rain stays selected until its deadline or a mode press. Manual Off stays off
+until the next mode press. Held keys
 prevent automatic idle entry. A validated, throttled custom split RPC carries
 the mode, modifiers, Caps Lock, active layer and physical-key visualization to
 the secondary half, independently of which side has USB.
+
+Rain runs at minimum OLED brightness (0); the dashboard restores the configured
+normal brightness. Both automatic and manual rain power down after ten minutes
+of continuous rain, regardless of activity during manual rain. A fresh keypress
+wakes the dashboard after this timeout. Releases, held keys and encoder rotation
+leave timeout-off asleep. Manually selected Off still requires a mode press.
 
 See the [current userspace guide](https://github.com/svenski88/qmk_userspace/blob/feature/link-oled/keyboards/cannonkeys/link/keymaps/svenge/README.md)
 for previews, saved-layout import, host tests, and matching-UF2 instructions for
