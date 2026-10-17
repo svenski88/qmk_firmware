@@ -38,3 +38,22 @@ Those branches and the released 2026 firmware are preserved separately.
 The baseline UF2 build and strict keymap lint passed using QMK CLI 1.2.0 and
 ARM GCC 10.1.0. OLED hardware behavior has not been tested on the keyboard, and
 no firmware was flashed during this setup.
+
+## Custom screens implemented in userspace
+
+The userspace branch now replaces the stock screens with mirrored physical-half
+keypress maps, large Ctrl/Caps-XOR/Alt panels on the physical left, and the actual
+highest active layer on the physical right. The saved Link VIA export supplies
+all six layers, including its SpaceFN layer-tap keys.
+
+Right encoder push [9,5] is reserved for Dashboard → Matrix rain → Off on both
+screens. Dashboard enters rain at 60 seconds idle and wakes on activity; manual
+rain stays selected and manual Off stays off until the next mode press. Held keys
+prevent automatic idle entry. A validated, throttled custom split RPC carries
+the mode, modifiers, Caps Lock, active layer and physical-key visualization to
+the secondary half, independently of which side has USB.
+
+See the [current userspace guide](https://github.com/svenski88/qmk_userspace/blob/feature/link-oled/keyboards/cannonkeys/link/keymaps/svenge/README.md)
+for previews, saved-layout import, host tests, and matching-UF2 instructions for
+both halves. The new UF2 build, strict lint, and model/renderer/adapter host tests
+pass. No keyboard-level code changes or automated flashing were needed.
