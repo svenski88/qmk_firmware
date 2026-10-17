@@ -1,0 +1,4 @@
+{
+    "userspace_version": "1.0",
+    "build_targets": [["wilba_tech/wt75_c", "svenge"]]
+}

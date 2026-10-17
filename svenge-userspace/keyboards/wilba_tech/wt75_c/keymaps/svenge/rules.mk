@@ -1,0 +1,6 @@
+LED_MATRIX_ENABLE = yes
+LED_MATRIX_CUSTOM_USER = yes
+VIA_ENABLE = yes
+LTO_ENABLE = yes
+
+SRC += $(KEYMAP_PATH)/lighting.c
