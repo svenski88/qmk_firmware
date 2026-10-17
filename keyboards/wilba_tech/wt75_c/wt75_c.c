@@ -7,7 +7,32 @@
 #    include "drivers/led/issi/is31fl3736-mono.h"
 #endif
 
+#ifdef LED_MATRIX_ENABLE
+
+void keyboard_post_init_kb(void) {
+    // Both split-backspace switch positions share the same physical LED.
+    // The data-driven mapping associates LED 61 with the right-hand switch.
+    g_led_config.matrix_co[1][13] = 61;
+    keyboard_post_init_user();
+}
+
+bool led_matrix_indicators_kb(void) {
+    if (!led_matrix_indicators_user()) {
+        return false;
+    }
+    if (host_keyboard_led_state().caps_lock) {
+        led_matrix_set_value(16, 255);
+    }
+    if (host_keyboard_led_state().scroll_lock) {
+        led_matrix_set_value(55, 255);
+    }
+    return true;
+}
+
+#endif
+
 #if defined(LED_MATRIX_ENABLE) || defined(MONO_BACKLIGHT_WT75_C)
+// clang-format off
 const is31fl3736_led_t PROGMEM g_is31fl3736_leds[IS31FL3736_LED_COUNT] = {
     {0, SW1_CS1},
     {0, SW1_CS2},
@@ -117,4 +142,5 @@ const is31fl3736_led_t PROGMEM g_is31fl3736_leds[IS31FL3736_LED_COUNT] = {
     {0, SW12_CS7},
     {0, SW12_CS8}
 };
+// clang-format on
 #endif

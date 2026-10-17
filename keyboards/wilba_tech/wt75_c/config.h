@@ -16,21 +16,7 @@
 
 #pragma once
 
-/*
- * Feature disable options
- *  These options are also useful to firmware size reduction.
- */
-
-/* disable debug print */
-//#define NO_DEBUG
-
-/* disable print */
-//#define NO_PRINT
-
-/* disable action features */
-//#define NO_ACTION_LAYER
-//#define NO_ACTION_TAPPING
-//#define NO_ACTION_ONESHOT
+#ifndef LED_MATRIX_ENABLE
 
 // enable the mono backlight
 #define MONO_BACKLIGHT_ENABLED 1
@@ -54,6 +40,8 @@
 #define MONO_BACKLIGHT_EFFECT_SPEED 000
 
 #define EECONFIG_KB_DATA_SIZE 7
+#define IS31FL3736_LED_COUNT 96
+
+#endif
 
 #define IS31FL3736_I2C_ADDRESS_1 IS31FL3736_I2C_ADDRESS_GND_GND
-#define IS31FL3736_LED_COUNT 96
