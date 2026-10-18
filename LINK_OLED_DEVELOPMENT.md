@@ -35,15 +35,29 @@ Right encoder push [9,5] is reserved for Dashboard -> Rain -> Off -> Dashboard.
 Dashboard enters rain after 60 seconds idle and wakes on activity. Held keys
 prevent automatic idle entry. Manual rain stays selected while typing.
 
-Rain uses minimum OLED brightness (0), restoring normal brightness on return
-to the dashboard. Both automatic and manual rain power down after ten continuous
-minutes. A fresh keypress wakes the dashboard after that timeout; held keys,
-releases and encoder rotation do not. Manual Off still needs a mode press.
+Right encoder rotation now adjusts both screens' normal brightness in steps of
+16 on the 0–255 scale, with clockwise brighter and counterclockwise dimmer. It
+replaces the board's Page Up/Down scrolling; left rotation retains volume control.
+The selected level starts at OLED_BRIGHTNESS on reboot and is not saved to EEPROM.
+Rotating while Off updates the level without waking the panels.
+
+The dashboard and active dedicated rain use the selected brightness. Automatic
+screensaver rain always uses minimum brightness (0). Dedicated rain dims to that
+minimum after 60 seconds idle; key activity or encoder rotation restores its
+selected brightness while staying in rain mode. Each physical keypress during
+dedicated rain adds a falling trail on that half. Eight trails per half are kept,
+with rapid bursts recycling the oldest. Held keys and releases add no trails.
+
+Both automatic and dedicated rain power down after ten continuous minutes.
+Idle dimming and subsequent activity do not reset that deadline. A fresh keypress
+wakes the dashboard after timeout; held keys, releases and encoder rotation do
+not. Manual Off still needs a mode press.
 
 A validated custom split RPC carries physical key pixels, modifiers, Caps Lock,
-layer, mode and per-half last-key codes. Attempts are capped at 40 per second,
-with a heartbeat and throttled retries. This edition uses screen-state protocol
-**2**, so both halves must run the matching firmware.
+layer, mode, effective brightness, per-half last-key codes and active extra rain
+trails. Attempts are capped at 40 per second, with a heartbeat and throttled
+retries. This edition uses screen-state protocol **3** and a 64-byte
+master-to-secondary RPC buffer, so both halves must run the matching firmware.
 
 ## Build and verification
 
